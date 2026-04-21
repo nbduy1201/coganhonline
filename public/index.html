@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hành trình Trạng nguyên Cờ gánh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pattaya&family=Sriracha&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <audio id="bg-music" loop><source src="music/Sương_Sớm_Bên_Cây_Đa.mp3" type="audio/mpeg"></audio>
+
+    <div id="auth-screen" class="screen auth-bg hidden">
+        <div class="auth-box" style="position: relative;">
+            <span onclick="closeAuth()" style="position: absolute; top: 5px; right: 15px; font-size: 1.8rem; color: #8b3a3a; cursor: pointer; font-family: sans-serif;">&times;</span>
+            <h2>Cửa khảo thí</h2>
+            <p id="auth-msg">Hãy xưng danh trước khi vào sới</p>
+            <input type="text" id="username" placeholder="Danh xưng" autocomplete="off">
+            <input type="password" id="password" placeholder="Khẩu quyết" autocomplete="off">
+            <div style="display:flex; gap:10px; justify-content: center; margin-top: 15px;">
+                <button class="wood-btn-small" onclick="attemptLogin()">Đăng nhập</button>
+                <button class="wood-btn-small" onclick="attemptRegister()">Ghi danh</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="start-screen" class="screen">
+        <div class="candle-light"></div>
+        <div class="title-container">
+            <h1 class="game-title">Cờ gánh</h1>
+            <div class="game-subtitle">Hành trình Trạng nguyên</div>
+            <div class="player-welcome" id="player-welcome">Kính chào, khách vãng lai</div>
+        </div>
+        <div class="menu-container">
+            <button class="wood-btn" id="main-start-btn" onclick="startGame()"><span class="seal">Tân</span> Khởi hành khoa cử</button>
+            
+            <button class="wood-btn" id="mission-board-btn" onclick="openMissions()" style="display: none;"><span class="seal">Phạt</span> Giang hồ bình định</button>
+            
+            <button class="wood-btn" onclick="toggleAiMenu()"><span class="seal">Mộc</span> Tỉ thí mộc nhân</button>
+            <div id="ai-menu" class="sub-menu hidden-sub">
+                <button class="submenu-btn" onclick="startFreePlay('easy')">Nhập môn (dễ)</button>
+                <button class="submenu-btn" onclick="startFreePlay('medium')">Tinh anh (vừa)</button>
+                <button class="submenu-btn" onclick="startFreePlay('hard')">Cao thủ (khó)</button>
+            </div>
+            
+            <button class="wood-btn" onclick="openPvPMenu()"><span class="seal">Sới</span> Đình lược quần hùng</button>
+            <button class="wood-btn" id="login-btn" onclick="openAuth()"><span class="seal">Danh</span> Xưng danh / Ghi danh</button>
+            <button class="wood-btn" id="profile-btn" onclick="openProfile()" style="display: none;"><span class="seal">Hành</span> Hành trang kỳ thủ</button>
+            <button class="wood-btn" id="admin-panel-btn" onclick="openAdminPanel()" style="display: none;"><span class="seal">Nha</span> Nha môn quản sự</button>
+            <button class="wood-btn" id="logout-btn" onclick="logout()" style="display: none;"><span class="seal">Lui</span> Cáo lui</button>
+        </div>
+
+        <div id="trang-nguyen-status" class="hidden" style="position: absolute; bottom: 30px; left: 30px; background: linear-gradient(to bottom, #dfc29e, #c98e54); border: 2px solid #8b3a3a; padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); display: flex; align-items: center; gap: 12px; z-index: 100; pointer-events: none;">
+            <span style="background: #b30000; color: #ffda75; padding: 4px 10px; border-radius: 4px; font-family: 'Pattaya', sans-serif; font-size: 1.1rem; border: 1px solid #ffda75; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">Vinh</span>
+            <span style="color: #4a2f18; font-family: 'Sriracha', cursive; font-size: 1.3rem; font-weight: bold; text-shadow: 1px 1px 0 rgba(255,255,255,0.3);">Trạng nguyên</span>
+        </div>
+    </div>
+
+    <div id="profile-screen" class="screen auth-bg hidden" style="z-index: 200;">
+        <div class="auth-box profile-box">
+            <h2>Hồ sơ kỳ thủ</h2>
+            <div class="profile-info">
+                <p><strong>Danh xưng:</strong> <span id="prof-username"></span></p>
+                <p><strong>Danh hiệu:</strong> <span id="prof-title" style="color:#d84315;"></span></p>
+                <p><strong>Tu vi:</strong> Chương <span id="prof-chapter"></span> - Bài <span id="prof-lesson"></span></p>
+                <div class="inventory-container">
+                    <p style="margin-top: 10px; margin-bottom: 5px;"><strong>Bảo vật kỳ trân:</strong></p>
+                    <div id="prof-rewards-grid" class="inventory-grid"></div>
+                </div>
+            </div>
+            <hr style="border: 1px dashed #8b3a3a; margin: 15px 0;">
+            <h3 style="color:#8b3a3a; font-family:'Sriracha', cursive; margin-bottom: 10px;">Thay khẩu quyết</h3>
+            <p id="pwd-msg" style="margin-bottom: 10px; font-size: 0.9rem;"></p>
+            <input type="password" id="old-pwd" placeholder="Khẩu quyết cũ" autocomplete="off">
+            <input type="password" id="new-pwd" placeholder="Khẩu quyết mới" autocomplete="off">
+            <div style="display:flex; gap:10px; justify-content: center; margin-top: 15px;">
+                <button class="wood-btn-small" onclick="attemptChangePassword()">Đóng ấn</button>
+                <button class="wood-btn-small" onclick="closeProfile()" style="background: #6d6d6d; border-color: #4a4a4a; box-shadow: inset 0 -3px 0 #3a3a3a;">Khép lại</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-screen" class="screen auth-bg hidden" style="z-index: 300;">
+        <div class="auth-box profile-box" style="width: 700px; max-width: 95%;">
+            <h2>Sổ bộ quản sự</h2>
+            <div style="background: rgba(139, 58, 58, 0.1); padding: 10px; border: 1px solid #8b3a3a; border-radius: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-family: 'Sriracha', cursive; color: #4a2f18; font-size: 1.1rem;"><strong>Chỉ tiêu khoa cử:</strong> (Hiện tại: <span id="admin-current-limit" style="color:#b30000"></span> người)</span>
+                <div>
+                    <input type="number" id="admin-limit-input" style="width: 80px; padding: 5px; margin-bottom: 0;">
+                    <button class="wood-btn-small" onclick="adminUpdateLimit()" style="padding: 5px 15px; font-size: 1rem;">Ban chiếu</button>
+                </div>
+            </div>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <h3 style="color:#b30000; text-align: left; font-family: 'Sriracha', cursive; margin-bottom: 5px; border-bottom: 2px dashed #b30000;">Sổ chờ bút phê</h3>
+                <table id="admin-pending-table" style="width: 100%; border-collapse: collapse; text-align: center; font-family: 'Sriracha', cursive; margin-bottom: 20px; background: rgba(255,255,255,0.6);">
+                    <thead><tr style="background: #b30000; color: #ffda75;"><th style="padding: 5px;">Danh xưng</th><th style="padding: 5px;">Mệnh lệnh</th></tr></thead>
+                    <tbody id="admin-pending-body" style="color: #4a2f18;"></tbody>
+                </table>
+                <h3 style="color:#1a5e20; text-align: left; font-family: 'Sriracha', cursive; margin-bottom: 5px; border-bottom: 2px dashed #1a5e20;">Sổ bộ chính thức</h3>
+                <table id="admin-table" style="width: 100%; border-collapse: collapse; text-align: center; font-family: 'Sriracha', cursive; background: rgba(255,255,255,0.6);">
+                    <thead><tr style="background: #1a5e20; color: #ffda75;"><th style="padding: 5px;">Danh xưng</th><th style="padding: 5px;">Tu vi</th><th style="padding: 5px;">Thân phận</th><th style="padding: 5px;">Mệnh lệnh</th></tr></thead>
+                    <tbody id="admin-table-body" style="color: #4a2f18;"></tbody>
+                </table>
+            </div>
+            <div style="display:flex; justify-content: center; margin-top: 15px;">
+                <button class="wood-btn-small" onclick="closeAdminPanel()" style="background: #6d6d6d; border-color: #4a4a4a;">Khép sổ bộ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pvp-screen" class="screen auth-bg hidden" style="z-index: 250;">
+        <div class="auth-box profile-box" style="width: 350px;">
+            <h2>Đình lược quần hùng</h2>
+            <div id="pvp-menu-state">
+                <button class="wood-btn" onclick="lapSoi()"><span class="seal">Tạo</span> Lập sới mới</button>
+                <div style="margin: 20px 0; border-bottom: 2px dashed #c98e54;"></div>
+                <input type="text" id="lenh-bai-input" placeholder="Nhập lệnh bài (4 chữ số)" style="text-transform: uppercase;" autocomplete="off">
+                <button class="wood-btn" onclick="nhapSoi()"><span class="seal">Vào</span> Giao lệnh bài</button>
+            </div>
+            <div id="pvp-waiting-state" class="hidden">
+                <p style="font-size: 1.2rem; color: #4a2f18;">Sới cờ đã lập!</p>
+                <p>Mã lệnh bài của bạn là:</p>
+                <h1 id="lenh-bai-display" style="font-size: 3rem; color: #b30000; letter-spacing: 5px; margin: 10px 0;">ABCD</h1>
+                <p class="blink-text" style="color: #1a5e20;">Đang chờ kỳ phùng địch thủ...</p>
+            </div>
+            <div style="display:flex; justify-content: center; margin-top: 20px;">
+                <button class="wood-btn-small" onclick="closePvPMenu()" style="background: #6d6d6d; border-color: #4a4a4a;">Cáo lui</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="missions-screen" class="screen auth-bg hidden" style="z-index: 200;">
+        <div class="auth-box profile-box" style="width: 800px; max-width: 95%;">
+            <h2>Bình định thiên hạ</h2>
+            <p style="color:#8b3a3a; margin-top: -10px; font-family: 'Sriracha', cursive; margin-bottom: 20px;">27 ải thử thách cực hạn</p>
+            <div id="missions-grid" class="missions-grid">
+                </div>
+            <div style="display:flex; justify-content: center; margin-top: 25px;">
+                <button class="wood-btn-small" onclick="closeMissions()" style="background: #6d6d6d; border-color: #4a4a4a;">Cáo lui</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen hidden">
+        <div id="weather-effect" class="rain-effect"></div>
+        <div class="overlay"></div>
+        
+        <div class="control-panel">
+            <button class="gear-btn" onclick="toggleSettings()">&#9881;</button> 
+            <div id="settings-menu" class="settings-dropdown hide-menu">
+                <button class="action-btn" id="leave-btn" onclick="goHome()">&#10094; Rời sới</button>
+                <button class="action-btn" onclick="restartLesson()">&#8634; Chơi mới</button>
+                <button class="action-btn" id="pause-btn" onclick="togglePause()">&#10074;&#10074; Tạm dừng</button>
+                <button class="action-btn" id="mute-btn" onclick="toggleMusic()">&#127925; Tắt nhạc</button>
+                <div class="volume-control">
+                    <span id="volume-icon">&#128266;</span>
+                    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1" oninput="changeVolume()">
+                </div>
+            </div>
+        </div>
+
+        <div class="header">
+            <h2 id="chapter-title">Chương...</h2>
+            <div class="status" id="turn-indicator" style="margin-bottom: 5px;">Lượt...</div>
+            <div class="score-board">
+                <span class="score-red">Đỏ: <span id="count-red">8</span></span> | 
+                <span class="score-white">Trắng: <span id="count-white">8</span></span>
+            </div>
+            <div id="timer-container" class="hidden"><div id="timer-bar"></div></div>
+        </div>
+
+        <div class="scene" id="game-scene">
+            <div class="board" id="board"><svg class="grid-lines" id="lines-svg" width="100%" height="100%"></svg></div>
+        </div>
+
+        <div id="skill-bar-container" class="skill-bar-bottom hidden">
+            <div class="sikhi-box">Sĩ khí: <strong id="sikhi-display">0</strong></div>
+            <div class="skills-row">
+                <button id="skill-btn-1" class="skill-btn locked" onclick="useSkill(1)" title="Thiên lý nhãn (Tốn 5 điểm) - Gợi ý nước đi">👁️</button>
+                <button id="skill-btn-2" class="skill-btn locked" onclick="useSkill(2)" title="Hồi tố (Tốn 8 điểm) - Lùi 1 bước cờ">⏳</button>
+                <button id="skill-btn-3" class="skill-btn locked" onclick="useSkill(3)" title="Ám khí (Tốn 15 điểm) - Tiêu diệt 1 quân địch">🗡️</button>
+                <button id="skill-btn-4" class="skill-btn locked" onclick="useSkill(4)" title="Độn thổ (Tốn 20 điểm) - Dịch chuyển quân">🌪️</button>
+            </div>
+        </div>
+
+        <div class="instructions" id="instruction-box">
+            <strong id="inst-title">Thầy đồ:</strong>
+            <div id="inst-text">Chào mừng con đến với lớp vỡ lòng.</div>
+            <div id="feedback-text" style="font-weight: bold; margin-top: 5px;"></div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button id="prev-btn" class="wood-btn-small hidden" onclick="prevLesson()">&#10094; Bài trước</button>
+                <button id="next-btn" class="wood-btn-small hidden" onclick="nextLesson()">Đã hiểu, tiếp tục</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="victory-screen" class="screen hidden" style="z-index: 500; background: #8b3a3a; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <div style="background: url('https://www.transparenttextures.com/patterns/stardust.png'); position: absolute; width: 100%; height: 100%; opacity: 0.3; pointer-events: none;"></div>
+        <h1 style="color: #ffda75; font-size: 4rem; font-family: 'Pattaya', sans-serif; text-shadow: 0 0 20px #ffda75; margin-bottom: 10px; z-index: 2;">KHÂM THỬ</h1>
+        <p style="color: #fff; font-family: 'Sriracha', cursive; font-size: 1.5rem; max-width: 600px; line-height: 1.6; z-index: 2;">
+            "Phụng thiên thừa vận, Hoàng đế chiếu viết: <br>
+            Nay có kỳ thủ <strong id="winner-name" style="color: #ffda75;"></strong> tài trí vẹn toàn, phá giải vạn thế cờ, kích bại quần hùng, lại đả bại trẫm nơi điện Thái Hòa. <br>
+            Đặc cách ban danh hiệu <strong style="color: #ffda75;">TRẠNG NGUYÊN</strong>, ban thưởng mũ cánh chuồn, áo bào đỏ, cưỡi ngựa lưu ban vinh quy bái tổ!"
+        </p>
+        <div style="margin-top: 30px; z-index: 2; display: flex; gap: 15px;">
+            <button class="wood-btn" onclick="location.reload()" style="font-size: 1.2rem; padding: 10px 30px;">Về lại cố hương</button>
+            <button class="wood-btn" onclick="openMissionsFromVictory()" style="font-size: 1.2rem; padding: 10px 30px;"><span class="seal">Phạt</span> Tiến vào giang hồ</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
