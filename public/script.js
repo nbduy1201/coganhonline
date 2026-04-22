@@ -511,10 +511,27 @@ window.startFreePlay = function(level) {
 };
 
 window.loadLesson = function(chapterIdx, lessonIdx) {
-    if (chapterIdx >= chapters.length) { window.goHome(); return; }
+    // TỰ ĐỘNG CHỮA BỆNH KẸT DỮ LIỆU (AUTO-HEAL)
+    // Nếu số bài học vượt quá số bài thực tế của chương, tự động nhảy sang chương tiếp theo
+    if (chapterIdx < chapters.length && lessonIdx >= chapters[chapterIdx].length) {
+        currentChapterIndex++;
+        currentLessonIndex = 0;
+        chapterIdx = currentChapterIndex;
+        lessonIdx = currentLessonIndex;
+        window.saveProgress(currentChapterIndex, currentLessonIndex);
+    }
+
+    // Nếu đã hoàn thành toàn bộ cốt truyện, mở thẳng 27 ải
+    if (chapterIdx >= chapters.length) { 
+        window.goHome(); 
+        setTimeout(() => { window.openMissions(); }, 600);
+        return; 
+    }
+
     isFreePlay = false; isPvPMode = false; isGiangHoMode = false; isStoryMode = false; lastMoveData = null; myPvPPlayerNum = 0; activeSkill = 0; historyStates = [];
     document.getElementById('board').classList.remove('board-flipped'); document.getElementById('leave-btn').innerHTML = '&#10094; Rời sới';
     clearTimeout(aiTimeout); clearTimeout(hideTextTimeout); stopTimer();
+    
     const lesson = chapters[chapterIdx][lessonIdx];
     
     let chapTitle = "";
