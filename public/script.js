@@ -1,5 +1,5 @@
 // ==========================================
-// TỰ ĐỘNG BỔ SUNG CSS CHO GAME 
+// 1. TỰ ĐỘNG BỔ SUNG CSS CHO GAME 
 // ==========================================
 const dynamicStyle = document.createElement('style');
 dynamicStyle.innerHTML = `
@@ -7,8 +7,6 @@ dynamicStyle.innerHTML = `
     .blink-text { animation: blinker 1.5s linear infinite; }
     @keyframes blinker { 50% { opacity: 0; } }
     #board { transition: transform 0.8s ease-in-out; position: relative; }
-    .board-flipped { transform: rotateX(30deg) rotateZ(180deg) !important; }
-    .board-flipped .piece, .board-flipped .obstacle, .board-flipped .node { transform: translate(-50%, -50%) rotateZ(-180deg) !important; }
     
     #lines-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
     .node { z-index: 5; }
@@ -34,7 +32,7 @@ dynamicStyle.innerHTML = `
 document.head.appendChild(dynamicStyle);
 
 // ==========================================
-// KHAI BÁO TOÀN BỘ BIẾN HỆ THỐNG
+// 2. KHAI BÁO TOÀN BỘ BIẾN HỆ THỐNG
 // ==========================================
 const socket = io();
 let currentUser = null; 
@@ -98,7 +96,7 @@ const bgMusic = document.getElementById('bg-music');
 const muteBtn = document.getElementById('mute-btn');
 
 // ==========================================
-// XÁC THỰC & HỒ SƠ TÀI KHOẢN (Đã bọc Window.)
+// 3. XÁC THỰC & HỒ SƠ TÀI KHOẢN
 // ==========================================
 window.openAuth = function() { document.getElementById('auth-screen').classList.remove('hidden'); };
 window.closeAuth = function() { document.getElementById('auth-screen').classList.add('hidden'); };
@@ -117,7 +115,6 @@ socket.on('login_response', (data) => {
         let chaoHoi = currentUserRole === 'admin' ? `Kính chào tổng quản, ${currentUser}` : `Kính chào kỳ thủ, ${currentUser}`;
         document.getElementById('player-welcome').innerText = chaoHoi;
         
-        // LOGIC CHUYỂN ĐỔI NÚT TRẠNG NGUYÊN
         if(currentChapterIndex >= 4) {
             document.getElementById('main-start-btn').style.display = "none";
             document.getElementById('mission-board-btn').style.display = "block";
@@ -177,7 +174,7 @@ window.attemptChangePassword = function() { const oldP = document.getElementById
 socket.on('change_password_response', (data) => { const msgEl = document.getElementById('pwd-msg'); msgEl.innerText = data.message; msgEl.style.color = data.success ? "green" : "red"; if (data.success) { document.getElementById('old-pwd').value = ""; document.getElementById('new-pwd').value = ""; } });
 
 // ==========================================
-// NHA MÔN QUẢN SỰ (ADMIN PANEL)
+// 4. NHA MÔN QUẢN SỰ (ADMIN PANEL)
 // ==========================================
 window.openAdminPanel = function() { if (currentUserRole !== 'admin') return; document.getElementById('admin-screen').classList.remove('hidden'); socket.emit('admin_fetch_users'); };
 window.closeAdminPanel = function() { document.getElementById('admin-screen').classList.add('hidden'); };
@@ -204,7 +201,7 @@ window.adminChangePwd = function(username) { let newPwd = prompt(`Ban khẩu quy
 socket.on('admin_action_success', (msg) => { alert(msg); });
 
 // ==========================================
-// PVP (ĐÌNH LƯỢC QUẦN HÙNG)
+// 5. PVP (ĐÌNH LƯỢC QUẦN HÙNG)
 // ==========================================
 window.openPvPMenu = function() { if (!currentUser) { document.getElementById('auth-msg').innerText = "Cần xưng danh để khai sới đấu mạng!"; document.getElementById('auth-msg').style.color = "#8b3a3a"; window.openAuth(); return; } document.getElementById('pvp-screen').classList.remove('hidden'); document.getElementById('pvp-menu-state').classList.remove('hidden'); document.getElementById('pvp-waiting-state').classList.add('hidden'); };
 window.closePvPMenu = function() { document.getElementById('pvp-screen').classList.add('hidden'); };
@@ -218,42 +215,25 @@ socket.on('soi_ready', (data) => {
     window.closePvPMenu(); document.getElementById('start-screen').classList.add('hidden');
     isPvPMode = true; isFreePlay = false; isExamMode = false; isGiangHoMode = false; isStoryMode = false; currentLenhBai = data.lenhBai; 
     document.getElementById('leave-btn').innerHTML = '&#10094; Rời sới';
-    const boardElement = document.getElementById('board');
-    if (myPvPPlayerNum === 1) { opponentName = data.p2_name; boardElement.classList.remove('board-flipped'); } 
-    else { myPvPPlayerNum = 2; opponentName = data.p1_name; boardElement.classList.add('board-flipped'); }
+    
+    if (myPvPPlayerNum === 1) { opponentName = data.p2_name; } 
+    else { myPvPPlayerNum = 2; opponentName = data.p1_name; }
+    
     setTimeout(() => {
         document.getElementById('game-screen').classList.remove('hidden'); gameScreen.className = 'screen free-play-mode'; weatherEffect.style.display = "none"; document.getElementById('skill-bar-container').classList.add('hidden');
         gameState = [ [2, 2, 2, 2, 2], [2, 0, 0, 0, 2], [2, 0, 0, 0, 1], [1, 0, 0, 0, 1], [1, 1, 1, 1, 1] ];
         currentPlayer = 1; moveCount = 0; isPaused = false; selectedPiece = null; showHint = false; lastMoveData = null; historyStates = []; activeSkill = 0;
         chapterTitle.innerText = `Sới cờ: ${currentLenhBai}`; instTitle.innerText = "Trọng tài:";
         instText.innerText = myPvPPlayerNum === 1 ? `Ngươi cầm Hỏa kỳ. Kẻ địch là [${opponentName}]. Ngươi đi trước!` : `Ngươi cầm Bạch kỳ. Kẻ địch là [${opponentName}]. Chờ Hỏa kỳ đi trước!`;
-        if (prevBtn) prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); instructionBox.classList.remove('collapsed'); stopTimer(); drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount();
+        if (prevBtn) prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); instructionBox.classList.remove('collapsed'); stopTimer(); window.drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount();
     }, 600);
 });
 socket.on('nhan_nuoc_di', (data) => { executeMove(data.r1, data.c1, data.r2, data.c2, true); });
 socket.on('doi_thu_dao_tau', () => { if (isPvPMode) { isPaused = true; showFeedback(`Tên [${opponentName}] đã bỏ chạy! Ngươi thắng trận!`, true); nextBtn.innerText = "Rời sới"; } });
 
 // ==========================================
-// CỐT TRUYỆN VÀ 27 ẢI GIANG HỒ
+// 6. CỐT TRUYỆN & 27 ẢI GIANG HỒ
 // ==========================================
-window.openMissionsFromVictory = function() { document.getElementById('victory-screen').classList.add('hidden'); window.openMissions(); };
-window.openMissions = function() {
-    document.getElementById('missions-screen').classList.remove('hidden');
-    const grid = document.getElementById('missions-grid'); grid.innerHTML = '';
-    for(let i = 0; i < 27; i++) {
-        let btn = document.createElement('button');
-        if (i <= myMissionProgress) {
-            btn.className = 'mission-btn'; btn.innerText = `${i+1}`;
-            btn.onclick = () => { window.closeMissions(); window.loadMission(i); };
-        } else { btn.className = 'mission-btn locked-mission'; btn.innerText = `🔒`; }
-        grid.appendChild(btn);
-    }
-};
-window.closeMissions = function() { 
-    document.getElementById('missions-screen').classList.add('hidden'); 
-    document.getElementById('start-screen').classList.remove('hidden');
-};
-
 const chapters = [
     [
         { title: "Bài 1: Nhận diện sa bàn", master: "Thầy đồ:", text: "Bàn cờ có 25 giao điểm. Mỗi bên nắm 8 quân cờ.", board: [ [2, 2, 2, 2, 2], [2, 0, 0, 0, 2], [2, 0, 0, 0, 1], [1, 0, 0, 0, 1], [1, 1, 1, 1, 1] ], interaction: false },
@@ -321,15 +301,15 @@ for (let i = 0; i < 27; i++) {
     let aiLvl = i < 5 ? "easy" : (i < 12 ? "medium" : (i < 20 ? "hard" : (i < 25 ? "very_hard" : "emperor")));
     let b = [ [2,2,2,2,2], [2,0,0,0,2], [0,0,0,0,0], [1,0,0,0,1], [1,1,1,1,1] ]; let blocked = [];
     if (i < 9) {
-        b[2][0] = 2; b[2][4] = 1; // 8v8
-        if (i >= 3) { b[3][0] = 0; b[1][0] = 2; } // 7v9
+        b[2][0] = 2; b[2][4] = 1; 
+        if (i >= 3) { b[3][0] = 0; b[1][0] = 2; } 
         if (i >= 6) { blocked.push({r:2, c:2}); } 
     } else if (i < 18) {
-        b = [ [2,2,2,2,2], [2,2,0,2,2], [0,0,0,0,0], [0,1,0,1,0], [1,1,1,0,0] ]; // 5v10
+        b = [ [2,2,2,2,2], [2,2,0,2,2], [0,0,0,0,0], [0,1,0,1,0], [1,1,1,0,0] ]; 
         if (i >= 12) { blocked.push({r:2, c:1}, {r:2, c:3}); }
         if (i >= 15) { blocked.push({r:3, c:0}, {r:3, c:4}); }
     } else {
-        b = [ [2,2,2,2,2], [2,2,2,2,2], [2,0,0,0,2], [0,0,1,0,0], [0,1,0,1,0] ]; // 3v12
+        b = [ [2,2,2,2,2], [2,2,2,2,2], [2,0,0,0,2], [0,0,1,0,0], [0,1,0,1,0] ]; 
         if (i >= 21) { blocked.push({r:2, c:2}, {r:3, c:2}); }
         if (i >= 24) { blocked.push({r:4, c:0}, {r:4, c:4}); }
     }
@@ -339,13 +319,31 @@ for (let i = 0; i < 27; i++) {
     });
 }
 
+window.openMissionsFromVictory = function() { document.getElementById('victory-screen').classList.add('hidden'); window.openMissions(); };
+window.openMissions = function() {
+    document.getElementById('missions-screen').classList.remove('hidden');
+    const grid = document.getElementById('missions-grid'); grid.innerHTML = '';
+    for(let i = 0; i < 27; i++) {
+        let btn = document.createElement('button');
+        if (i <= myMissionProgress) {
+            btn.className = 'mission-btn'; btn.innerText = `${i+1}`;
+            btn.onclick = () => { window.closeMissions(); window.loadMission(i); };
+        } else { btn.className = 'mission-btn locked-mission'; btn.innerText = `🔒`; }
+        grid.appendChild(btn);
+    }
+};
+window.closeMissions = function() { 
+    document.getElementById('missions-screen').classList.add('hidden'); 
+    document.getElementById('start-screen').classList.remove('hidden');
+};
+
 function getCurrentLessonData() {
     if (isFreePlay || isPvPMode || isGiangHoMode || currentChapterIndex >= chapters.length) return null;
     return chapters[currentChapterIndex][currentLessonIndex];
 }
 
 // ==========================================
-// CÁC HÀM UI & KỸ NĂNG (SKILLS)
+// 7. CÁC HÀM XỬ LÝ GIAO DIỆN & KỸ NĂNG
 // ==========================================
 function highlightForExplanation(coordsArr, type = 'explain-highlight') { coordsArr.forEach(c => { let visual_r = (isPvPMode && myPvPPlayerNum === 2) ? 4 - c.r : c.r; let visual_c = (isPvPMode && myPvPPlayerNum === 2) ? 4 - c.c : c.c; let pEl = document.querySelector(`.piece[data-vr="${visual_r}"][data-vc="${visual_c}"]`); if(pEl) pEl.classList.add(type); }); }
 function clearExplanationHighlights() { document.querySelectorAll('.explain-highlight, .explain-trap').forEach(el => el.classList.remove('explain-highlight', 'explain-trap')); }
@@ -397,7 +395,7 @@ window.useSkill = function(skillId) {
 };
 
 // ==========================================
-// ĐIỀU HƯỚNG & QUẢN LÝ THỜI GIAN
+// 8. ĐIỀU HƯỚNG & QUẢN LÝ THỜI GIAN
 // ==========================================
 function startTimer(seconds) {
     clearInterval(timerInterval); maxTime = seconds; timeLeft = seconds; timerContainer.classList.remove('hidden');
@@ -434,7 +432,6 @@ window.changeVolume = function() {
     if (bgMusic.volume === 0) { volumeIcon.innerHTML = "&#128263;"; if (muteBtn) { muteBtn.innerHTML = "&#128263; Bật nhạc"; muteBtn.classList.add('muted'); } } 
     else { volumeIcon.innerHTML = bgMusic.volume < 0.5 ? "&#128265;" : "&#128266;"; if (muteBtn) { muteBtn.innerHTML = "&#127925; Tắt nhạc"; muteBtn.classList.remove('muted'); } if (bgMusic.paused) { bgMusic.play().catch(() => {}); isMusicPlaying = true; } }
 };
-
 window.togglePause = function() {
     isPaused = !isPaused; const pauseBtn = document.getElementById('pause-btn');
     if (isPaused) {
@@ -480,7 +477,7 @@ window.goHome = function() {
 };
 
 // ==========================================
-// KHỞI TẠO BÀN CỜ VÀ LUỒNG GAME
+// 9. KHỞI TẠO BÀN CỜ VÀ LUỒNG GAME
 // ==========================================
 window.startGame = function() {
     if (!currentUser) { document.getElementById('auth-msg').innerText = "Cần xưng danh để lưu lại quá trình khoa cử!"; document.getElementById('auth-msg').style.color = "#8b3a3a"; window.openAuth(); return; }
@@ -488,7 +485,7 @@ window.startGame = function() {
     
     document.getElementById('start-screen').classList.add('hidden');
     if(bgMusic) { bgMusic.play().then(() => { isMusicPlaying = true; muteBtn.innerHTML = "&#127925; Tắt nhạc"; muteBtn.classList.remove('muted'); }).catch(() => {}); }
-    setTimeout(() => { document.getElementById('game-screen').classList.remove('hidden'); drawLines(); renderNodes(); window.loadLesson(currentChapterIndex, currentLessonIndex); }, 600);
+    setTimeout(() => { document.getElementById('game-screen').classList.remove('hidden'); window.drawLines(); renderNodes(); window.loadLesson(currentChapterIndex, currentLessonIndex); }, 600);
 };
 
 window.startFreePlay = function(level) {
@@ -506,39 +503,27 @@ window.startFreePlay = function(level) {
         let levelName = level === 'easy' ? "Nhập môn" : (level === 'medium' ? "Tinh anh" : "Cao thủ");
         chapterTitle.innerText = "Tỉ thí mộc nhân: " + levelName; instTitle.innerText = "Trọng tài:"; instText.innerText = "Sới cờ tự do bắt đầu!"; feedbackText.innerText = "";
         if (prevBtn) prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); instructionBox.classList.remove('collapsed'); stopTimer(); 
-        drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount(); triggerAutoHideText(); updateSkillUI();
+        window.drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount(); triggerAutoHideText(); updateSkillUI();
     }, 600);
 };
 
 window.loadLesson = function(chapterIdx, lessonIdx) {
-    // TỰ ĐỘNG CHỮA BỆNH KẸT DỮ LIỆU (AUTO-HEAL)
-    // Nếu số bài học vượt quá số bài thực tế của chương, tự động nhảy sang chương tiếp theo
     if (chapterIdx < chapters.length && lessonIdx >= chapters[chapterIdx].length) {
-        currentChapterIndex++;
-        currentLessonIndex = 0;
-        chapterIdx = currentChapterIndex;
-        lessonIdx = currentLessonIndex;
+        currentChapterIndex++; currentLessonIndex = 0;
+        chapterIdx = currentChapterIndex; lessonIdx = currentLessonIndex;
         window.saveProgress(currentChapterIndex, currentLessonIndex);
     }
-
-    // Nếu đã hoàn thành toàn bộ cốt truyện, mở thẳng 27 ải
-    if (chapterIdx >= chapters.length) { 
-        window.goHome(); 
-        setTimeout(() => { window.openMissions(); }, 600);
-        return; 
-    }
+    if (chapterIdx >= chapters.length) { window.goHome(); setTimeout(() => { window.openMissions(); }, 600); return; }
 
     isFreePlay = false; isPvPMode = false; isGiangHoMode = false; isStoryMode = false; lastMoveData = null; myPvPPlayerNum = 0; activeSkill = 0; historyStates = [];
     document.getElementById('board').classList.remove('board-flipped'); document.getElementById('leave-btn').innerHTML = '&#10094; Rời sới';
     clearTimeout(aiTimeout); clearTimeout(hideTextTimeout); stopTimer();
-    
     const lesson = chapters[chapterIdx][lessonIdx];
     
     let chapTitle = "";
     if (chapterIdx === 0) chapTitle = "Chương 1: Lớp vỡ lòng"; else if (chapterIdx === 1) chapTitle = "Chương 2: Thi hương"; else if (chapterIdx === 2) chapTitle = "Chương 3: Thi hội"; else chapTitle = "Chương 4: Thi đình";
     
-    chapterTitle.innerText = chapTitle; instTitle.innerText = lesson.master; instText.innerText = lesson.text; feedbackText.innerText = ""; 
-    clearExplanationHighlights();
+    chapterTitle.innerText = chapTitle; instTitle.innerText = lesson.master; instText.innerText = lesson.text; feedbackText.innerText = ""; clearExplanationHighlights();
     
     if (chapterIdx === 2 && lessonIdx === 1) lesson.board[0][0] = 1; 
     gameState = lesson.board.map(row => [...row]);
@@ -552,7 +537,7 @@ window.loadLesson = function(chapterIdx, lessonIdx) {
     if (isExamMode) { gameScene.classList.add('exam-mode'); instructionBox.classList.add('exam-mode'); document.getElementById('skill-bar-container').classList.remove('hidden'); triggerAutoHideText(); } 
     else { gameScene.classList.remove('exam-mode'); instructionBox.classList.remove('exam-mode'); document.getElementById('skill-bar-container').classList.add('hidden'); }
 
-    drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount(); updateSkillUI();
+    window.drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount(); updateSkillUI();
     
     if (prevBtn) { prevBtn.style.display = ""; if ((chapterIdx === 0 && lessonIdx === 0) || isExamMode) prevBtn.classList.add('hidden'); else prevBtn.classList.remove('hidden'); }
     if (nextBtn && nextBtn.parentElement) nextBtn.parentElement.style.justifyContent = isExamMode ? "center" : "flex-start";
@@ -567,7 +552,10 @@ window.loadMission = function(missionIdx) {
     clearTimeout(aiTimeout); clearTimeout(hideTextTimeout); stopTimer();
     const mission = giangHoMissions[missionIdx];
     
-    document.getElementById('start-screen').classList.add('hidden'); document.getElementById('game-screen').classList.remove('hidden');
+    document.getElementById('missions-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.add('hidden'); 
+    document.getElementById('game-screen').classList.remove('hidden');
+    
     chapterTitle.innerText = mission.title; instTitle.innerText = "Mật thư:"; instText.innerText = mission.story; feedbackText.innerText = ""; clearExplanationHighlights();
     
     gameState = mission.board.map(row => [...row]);
@@ -576,7 +564,7 @@ window.loadMission = function(missionIdx) {
     currentPlayer = 1; selectedPiece = null; isExamMode = true; showHint = false; moveCount = 0; isPaused = false; isStoryMode = true; 
     instructionBox.classList.remove('collapsed'); gameScreen.className = `screen free-play-mode`; weatherEffect.style.display = "none"; gameScene.classList.add('exam-mode'); instructionBox.classList.add('exam-mode'); document.getElementById('skill-bar-container').classList.remove('hidden');
 
-    drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount(); updateSkillUI();
+    window.drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount(); updateSkillUI();
     
     if (prevBtn) prevBtn.classList.add('hidden'); 
     nextBtn.classList.remove('hidden'); nextBtn.innerText = "Tiến vào sa bàn";
@@ -591,7 +579,7 @@ window.loadMission = function(missionIdx) {
 
 function triggerAutoHideText() { clearTimeout(hideTextTimeout); hideTextTimeout = setTimeout(() => { if (!isPaused && !isStoryMode && nextBtn.classList.contains('hidden')) { instructionBox.classList.add('collapsed'); } }, 4000); }
 window.prevLesson = function() { clearTimeout(hideTextTimeout); clearTimeout(aiTimeout); clearExplanationHighlights(); stopTimer(); isPaused = false; if (currentLessonIndex > 0) { currentLessonIndex--; } else if (currentChapterIndex > 0) { currentChapterIndex--; currentLessonIndex = chapters[currentChapterIndex].length - 1; } window.saveProgress(currentChapterIndex, currentLessonIndex); window.loadLesson(currentChapterIndex, currentLessonIndex); };
-function showVictoryScreen() { document.getElementById('game-screen').classList.add('hidden'); document.getElementById('victory-screen').classList.remove('hidden'); document.getElementById('winner-name').innerText = currentUser; }
+window.showVictoryScreen = function() { document.getElementById('game-screen').classList.add('hidden'); document.getElementById('victory-screen').classList.remove('hidden'); document.getElementById('winner-name').innerText = currentUser; };
 
 window.nextLesson = function() {
     if (nextBtn.innerText === "Thử lại") { window.restartLesson(); return; }
@@ -630,7 +618,7 @@ window.nextLesson = function() {
             nextBtn.onclick = function() { currentChapterIndex = 3; currentLessonIndex = 0; window.saveProgress(3, 0); nextBtn.onclick = window.nextLesson; window.loadLesson(3, 0); };
         } else if (currentChapterIndex === 3) {
             window.unlockSkill("Độn thổ"); window.unlockReward("Mũ cánh chuồn"); window.unlockReward("Áo bào đỏ"); 
-            currentChapterIndex = 4; window.saveProgress(4, 0); showVictoryScreen();
+            currentChapterIndex = 4; currentLessonIndex = 0; window.saveProgress(4, 0); window.showVictoryScreen();
         }
     }
 };
@@ -654,11 +642,11 @@ function updatePieceCount() {
 }
 
 // ==========================================
-// VẼ BÀN CỜ VÀ TỌA ĐỘ
+// 10. VẼ BÀN CỜ VÀ TỌA ĐỘ
 // ==========================================
 function getVisualCoords(r, c) { if (isPvPMode && myPvPPlayerNum === 2) { return { vr: 4 - r, vc: 4 - c }; } return { vr: r, vc: c }; }
 
-function drawLines() {
+window.drawLines = function() {
     const svg = document.getElementById('lines-svg');
     if (!svg) return;
     while (svg.firstChild) { svg.removeChild(svg.firstChild); }
@@ -673,7 +661,7 @@ function drawLines() {
     }
     createLine("0%", "0%", "100%", "100%"); createLine("0%", "100%", "100%", "0%"); createLine("50%", "0%", "100%", "50%");
     createLine("100%", "50%", "50%", "100%"); createLine("50%", "100%", "0%", "50%"); createLine("0%", "50%", "50%", "0%");
-}
+};
 
 function renderNodes() {
     document.querySelectorAll('.node').forEach(n => n.remove()); 
@@ -709,7 +697,7 @@ function renderPieces() {
 }
 
 // ==========================================
-// ĐIỀU KHIỂN & ĐÁNH CỜ
+// 11. ĐIỀU KHIỂN & ĐÁNH CỜ
 // ==========================================
 function handlePieceClick(r, c) {
     if (isPaused || isStoryMode) return; 
@@ -870,7 +858,7 @@ function executeMove(r1, c1, r2, c2, fromNetwork = false) {
 }
 
 // ==========================================
-// LUẬT GÁNH CHẸT VÀ AI
+// 12. LUẬT GÁNH CHẸT VÀ AI
 // ==========================================
 function performGanh(r, c, player, stateMap) {
     const enemy = player === 1 ? 2 : 1; let gainedCount = 0; const lines = [ [{dr: -1, dc: 0}, {dr: 1, dc: 0}], [{dr: 0, dc: -1}, {dr: 0, dc: 1}], [{dr: -1, dc: -1}, {dr: 1, dc: 1}], [{dr: -1, dc: 1}, {dr: 1, dc: -1}] ]; let canCheckDiagonal = (r + c) % 2 === 0;
