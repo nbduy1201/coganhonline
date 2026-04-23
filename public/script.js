@@ -216,16 +216,31 @@ socket.on('soi_ready', (data) => {
     isPvPMode = true; isFreePlay = false; isExamMode = false; isGiangHoMode = false; isStoryMode = false; currentLenhBai = data.lenhBai; 
     document.getElementById('leave-btn').innerHTML = '&#10094; Rời sới';
     
-    if (myPvPPlayerNum === 1) { opponentName = data.p2_name; } 
-    else { myPvPPlayerNum = 2; opponentName = data.p1_name; }
+    const boardElement = document.getElementById('board');
+    if (myPvPPlayerNum === 1) { opponentName = data.p2_name; boardElement.classList.remove('board-flipped'); } 
+    else { myPvPPlayerNum = 2; opponentName = data.p1_name; boardElement.classList.add('board-flipped'); }
     
     setTimeout(() => {
-        document.getElementById('game-screen').classList.remove('hidden'); gameScreen.className = 'screen free-play-mode'; weatherEffect.style.display = "none"; document.getElementById('skill-bar-container').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden'); 
+        gameScreen.className = 'screen free-play-mode'; 
+        weatherEffect.style.display = "none"; 
+        document.getElementById('skill-bar-container').classList.add('hidden');
+        
+        // ĐƯA BÀN CỜ VÀ HỘP THOẠI VÀO CHÍNH GIỮA MÀN HÌNH
+        gameScene.classList.add('exam-mode'); 
+        instructionBox.classList.add('exam-mode');
+        
         gameState = [ [2, 2, 2, 2, 2], [2, 0, 0, 0, 2], [2, 0, 0, 0, 1], [1, 0, 0, 0, 1], [1, 1, 1, 1, 1] ];
         currentPlayer = 1; moveCount = 0; isPaused = false; selectedPiece = null; showHint = false; lastMoveData = null; historyStates = []; activeSkill = 0;
+        
         chapterTitle.innerText = `Sới cờ: ${currentLenhBai}`; instTitle.innerText = "Trọng tài:";
         instText.innerText = myPvPPlayerNum === 1 ? `Ngươi cầm Hỏa kỳ. Kẻ địch là [${opponentName}]. Ngươi đi trước!` : `Ngươi cầm Bạch kỳ. Kẻ địch là [${opponentName}]. Chờ Hỏa kỳ đi trước!`;
-        if (prevBtn) prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); instructionBox.classList.remove('collapsed'); stopTimer(); window.drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount();
+        
+        if (prevBtn) prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); instructionBox.classList.remove('collapsed'); 
+        stopTimer(); window.drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount();
+        
+        // TỰ ĐỘNG THU GỌN HỘP THOẠI SAU 4 GIÂY ĐỂ KHÔNG CHE BÀN CỜ
+        triggerAutoHideText();
     }, 600);
 });
 socket.on('nhan_nuoc_di', (data) => { executeMove(data.r1, data.c1, data.r2, data.c2, true); });
