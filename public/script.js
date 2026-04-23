@@ -7,8 +7,6 @@ dynamicStyle.innerHTML = `
     .blink-text { animation: blinker 1.5s linear infinite; }
     @keyframes blinker { 50% { opacity: 0; } }
     #board { transition: transform 0.8s ease-in-out; position: relative; }
-    .board-flipped { transform: rotateX(30deg) rotateZ(180deg) !important; }
-    .board-flipped .piece, .board-flipped .obstacle, .board-flipped .node { transform: translate(-50%, -50%) rotateZ(-180deg) !important; }
     
     #lines-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
     .node { z-index: 5; }
@@ -34,15 +32,11 @@ dynamicStyle.innerHTML = `
 document.head.appendChild(dynamicStyle);
 
 // ==========================================
-// KHAI BÁO TOÀN BỘ BIẾN HỆ THỐNG
+// KHAI BÁO TẤT CẢ BIẾN TOÀN CỤC
 // ==========================================
 const socket = io();
-let currentUser = null; 
-let currentUserRole = 'user'; 
-let myRewards = []; 
-let mySkills = []; 
-let mySiKhi = 0; 
-let myMissionProgress = 0;
+let currentUser = null; let currentUserRole = 'user'; 
+let myRewards = []; let mySkills = []; let mySiKhi = 0; let myMissionProgress = 0;
 
 const BOARD_SIZE = 5; 
 let gameState = []; 
@@ -65,16 +59,9 @@ let timerInterval = null;
 let timeLeft = 0; 
 let maxTime = 0;
 
-let historyStates = []; 
-let activeSkill = 0; 
-let lastPlayerLost = 0;
-let isPvPMode = false; 
-let currentLenhBai = ""; 
-let myPvPPlayerNum = 0; 
-let opponentName = "";
-let isGiangHoMode = false; 
-let currentMissionIndex = 0; 
-let isStoryMode = false;
+let historyStates = []; let activeSkill = 0; let lastPlayerLost = 0;
+let isPvPMode = false; let currentLenhBai = ""; let myPvPPlayerNum = 0; let opponentName = "";
+let isGiangHoMode = false; let currentMissionIndex = 0; let isStoryMode = false;
 
 // DOM Elements
 const boardEl = document.getElementById('board'); 
@@ -98,162 +85,8 @@ const bgMusic = document.getElementById('bg-music');
 const muteBtn = document.getElementById('mute-btn');
 
 // ==========================================
-// XÁC THỰC & HỒ SƠ TÀI KHOẢN (Đã bọc Window.)
+// CỐT TRUYỆN & DỮ LIỆU CÁC ẢI
 // ==========================================
-window.openAuth = function() { document.getElementById('auth-screen').classList.remove('hidden'); };
-window.closeAuth = function() { document.getElementById('auth-screen').classList.add('hidden'); };
-window.attemptLogin = function() { const u = document.getElementById('username').value; const p = document.getElementById('password').value; if(u && p) socket.emit('login', { username: u, password: p }); else alert("Vui lòng điền đủ danh xưng và khẩu quyết!"); };
-window.attemptRegister = function() { const u = document.getElementById('username').value; const p = document.getElementById('password').value; if(u && p) socket.emit('register', { username: u, password: p }); else alert("Vui lòng điền đủ danh xưng và khẩu quyết!"); };
-
-socket.on('register_response', (data) => { document.getElementById('auth-msg').innerText = data.message; document.getElementById('auth-msg').style.color = data.success ? "green" : "red"; });
-
-socket.on('login_response', (data) => {
-    if(data.success) {
-        currentUser = data.username; currentUserRole = data.role; 
-        currentChapterIndex = data.chapter || 0; currentLessonIndex = data.lesson || 0;
-        myRewards = data.rewards || []; mySkills = data.skills || []; mySiKhi = data.sikhi || 0; myMissionProgress = data.mission || 0;
-        
-        window.closeAuth();
-        let chaoHoi = currentUserRole === 'admin' ? `Kính chào tổng quản, ${currentUser}` : `Kính chào kỳ thủ, ${currentUser}`;
-        document.getElementById('player-welcome').innerText = chaoHoi;
-        
-        // LOGIC CHUYỂN ĐỔI NÚT TRẠNG NGUYÊN
-        if(currentChapterIndex >= 4) {
-            document.getElementById('main-start-btn').style.display = "none";
-            document.getElementById('mission-board-btn').style.display = "block";
-            document.getElementById('trang-nguyen-status').classList.remove('hidden');
-        } else {
-            document.getElementById('main-start-btn').style.display = "block";
-            document.getElementById('mission-board-btn').style.display = "none";
-            document.getElementById('trang-nguyen-status').classList.add('hidden');
-            if(currentChapterIndex > 0 || currentLessonIndex > 0) {
-                document.getElementById('main-start-btn').innerHTML = '<span class="seal">Tiếp</span> Tiếp tục khoa cử';
-            } else {
-                document.getElementById('main-start-btn').innerHTML = '<span class="seal">Tân</span> Khởi hành khoa cử';
-            }
-        }
-
-        document.getElementById('login-btn').style.display = "none"; document.getElementById('profile-btn').style.display = "block"; document.getElementById('logout-btn').style.display = "block";
-        if (currentUserRole === 'admin') document.getElementById('admin-panel-btn').style.display = "block"; else document.getElementById('admin-panel-btn').style.display = "none";
-    } else { document.getElementById('auth-msg').innerText = data.message; document.getElementById('auth-msg').style.color = "red"; }
-});
-
-window.logout = function() {
-    currentUser = null; currentUserRole = 'user'; currentChapterIndex = 0; currentLessonIndex = 0; myRewards = []; mySkills = []; mySiKhi = 0; myMissionProgress = 0;
-    document.getElementById('player-welcome').innerText = "Kính chào, khách vãng lai"; 
-    
-    document.getElementById('main-start-btn').style.display = "block";
-    document.getElementById('main-start-btn').innerHTML = '<span class="seal">Tân</span> Khởi hành khoa cử';
-    document.getElementById('mission-board-btn').style.display = "none";
-    document.getElementById('trang-nguyen-status').classList.add('hidden');
-
-    document.getElementById('login-btn').style.display = "block"; document.getElementById('profile-btn').style.display = "none"; document.getElementById('admin-panel-btn').style.display = "none"; document.getElementById('logout-btn').style.display = "none"; 
-    document.getElementById('username').value = ''; document.getElementById('password').value = ''; document.getElementById('auth-msg').innerText = "Hãy xưng danh trước khi vào sới"; document.getElementById('auth-msg').style.color = "#4a2f18";
-};
-
-window.saveProgress = function(chapter, lesson) { if (currentUser) socket.emit('save_progress', { chapter, lesson, rewards: myRewards, skills: mySkills, sikhi: mySiKhi, mission: myMissionProgress }); };
-window.unlockReward = function(rewardName) { if (!myRewards.includes(rewardName)) { myRewards.push(rewardName); window.saveProgress(currentChapterIndex, currentLessonIndex); } };
-window.unlockSkill = function(skillName) { if (!mySkills.includes(skillName)) { mySkills.push(skillName); window.saveProgress(currentChapterIndex, currentLessonIndex); updateSkillUI(); } };
-
-const REWARD_ICONS = { "Bộ cờ ngọc bích": "🟢", "Áo giao lĩnh": "👘", "Bộ cờ khảm xà cừ": "🐚", "Mũ cánh chuồn": "🎓", "Áo bào đỏ": "🧧" };
-window.openProfile = function() {
-    if (!currentUser) return alert("Vui lòng xưng danh trước!");
-    document.getElementById('prof-username').innerText = currentUser;
-    let danhHieu = currentUserRole === 'admin' ? "Khâm sai tổng quản" : "Thư sinh";
-    if (currentUserRole !== 'admin') { if (currentChapterIndex === 1) danhHieu = "Tú tài"; if (currentChapterIndex === 2) danhHieu = "Cử nhân"; if (currentChapterIndex >= 3) danhHieu = "Trạng nguyên"; }
-    document.getElementById('prof-title').innerText = danhHieu; document.getElementById('prof-chapter').innerText = currentChapterIndex >= 4 ? "Đã xuất các" : currentChapterIndex + 1;
-    document.getElementById('prof-lesson').innerText = currentChapterIndex >= 4 ? "Hành tẩu" : currentLessonIndex + 1;
-    
-    const gridEl = document.getElementById('prof-rewards-grid'); gridEl.innerHTML = ''; 
-    for (let i = 0; i < 5; i++) {
-        let slot = document.createElement('div');
-        if (myRewards && i < myRewards.length) { let rwName = myRewards[i]; slot.className = 'inventory-slot'; slot.innerText = REWARD_ICONS[rwName] || "🎁"; slot.title = rwName; 
-        } else { slot.className = 'inventory-slot empty'; } gridEl.appendChild(slot);
-    }
-    document.getElementById('pwd-msg').innerText = ""; document.getElementById('old-pwd').value = ""; document.getElementById('new-pwd').value = ""; document.getElementById('profile-screen').classList.remove('hidden');
-};
-window.closeProfile = function() { document.getElementById('profile-screen').classList.add('hidden'); };
-window.attemptChangePassword = function() { const oldP = document.getElementById('old-pwd').value; const newP = document.getElementById('new-pwd').value; if (!oldP || !newP) return alert("Vui lòng nhập đủ khẩu quyết cũ và mới!"); socket.emit('change_password', { oldPassword: oldP, newPassword: newP }); };
-socket.on('change_password_response', (data) => { const msgEl = document.getElementById('pwd-msg'); msgEl.innerText = data.message; msgEl.style.color = data.success ? "green" : "red"; if (data.success) { document.getElementById('old-pwd').value = ""; document.getElementById('new-pwd').value = ""; } });
-
-// ==========================================
-// NHA MÔN QUẢN SỰ (ADMIN PANEL)
-// ==========================================
-window.openAdminPanel = function() { if (currentUserRole !== 'admin') return; document.getElementById('admin-screen').classList.remove('hidden'); socket.emit('admin_fetch_users'); };
-window.closeAdminPanel = function() { document.getElementById('admin-screen').classList.add('hidden'); };
-socket.on('admin_refresh_data', () => { if (currentUserRole === 'admin' && !document.getElementById('admin-screen').classList.contains('hidden')) { socket.emit('admin_fetch_users'); } });
-socket.on('admin_users_list', (data) => {
-    const { users, limit } = data; document.getElementById('admin-current-limit').innerText = limit;
-    const pendingBody = document.getElementById('admin-pending-body'); const officialBody = document.getElementById('admin-table-body');
-    pendingBody.innerHTML = ''; officialBody.innerHTML = ''; let hasPending = false;
-    users.forEach(u => {
-        if (u.status === 'pending') { hasPending = true; pendingBody.innerHTML += `<tr><td style="padding: 8px;"><strong>${u.username}</strong></td><td style="padding: 8px;"><button class="admin-action-btn" style="background:#1a5e20;" onclick="adminApprove('${u.username}')">Chuẩn y</button> <button class="admin-action-btn danger" onclick="adminReject('${u.username}')">Bác bỏ</button></td></tr>`; } 
-        else {
-            let chucVu = u.role === 'admin' ? '<strong style="color:#b30000;">Tổng quản</strong>' : 'Kỳ thủ'; let phongTuocTxt = u.role === 'admin' ? 'Giáng chức' : 'Phong tước'; let btnDisabled = u.username === 'admin' ? 'disabled style="opacity: 0.5;"' : ''; 
-            officialBody.innerHTML += `<tr><td style="padding: 8px;"><strong>${u.username}</strong></td><td style="padding: 8px;">Chương ${u.chapter + 1}</td><td style="padding: 8px;">${chucVu}</td><td style="padding: 8px;"><button class="admin-action-btn" ${btnDisabled} onclick="adminChangePwd('${u.username}')">Ban KQ</button> <button class="admin-action-btn" ${btnDisabled} onclick="adminToggleRole('${u.username}', '${u.role}')">${phongTuocTxt}</button> <button class="admin-action-btn danger" ${btnDisabled} onclick="adminDelete('${u.username}')">Trục xuất</button></td></tr>`;
-        }
-    });
-    if (!hasPending) pendingBody.innerHTML = `<tr><td colspan="2" style="padding: 10px; color: #888;">Không có hồ sơ nào chờ duyệt.</td></tr>`;
-});
-window.adminUpdateLimit = function() { const val = document.getElementById('admin-limit-input').value; if (val && parseInt(val) > 0) socket.emit('admin_set_limit', val); };
-window.adminApprove = function(username) { socket.emit('admin_approve_user', username); };
-window.adminReject = function(username) { if (confirm(`Thiêu rụi hồ sơ của [${username}]?`)) socket.emit('admin_reject_user', username); };
-window.adminDelete = function(username) { if (confirm(`Trục xuất [${username}] khỏi cõi này?`)) socket.emit('admin_delete_user', { username }); };
-window.adminToggleRole = function(username, currentRole) { let hoi = currentRole === 'admin' ? `Giáng chức [${username}]?` : `Phong tổng quản cho [${username}]?`; if (confirm(hoi)) socket.emit('admin_toggle_role', { username, currentRole }); };
-window.adminChangePwd = function(username) { let newPwd = prompt(`Ban khẩu quyết mới cho [${username}]:`, "123456"); if (newPwd && newPwd.trim() !== "") socket.emit('admin_force_password', { username, newPassword: newPwd }); };
-socket.on('admin_action_success', (msg) => { alert(msg); });
-
-// ==========================================
-// PVP (ĐÌNH LƯỢC QUẦN HÙNG)
-// ==========================================
-window.openPvPMenu = function() { if (!currentUser) { document.getElementById('auth-msg').innerText = "Cần xưng danh để khai sới đấu mạng!"; document.getElementById('auth-msg').style.color = "#8b3a3a"; window.openAuth(); return; } document.getElementById('pvp-screen').classList.remove('hidden'); document.getElementById('pvp-menu-state').classList.remove('hidden'); document.getElementById('pvp-waiting-state').classList.add('hidden'); };
-window.closePvPMenu = function() { document.getElementById('pvp-screen').classList.add('hidden'); };
-window.lapSoi = function() { socket.emit('lap_soi'); };
-window.nhapSoi = function() { const lenhBai = document.getElementById('lenh-bai-input').value.trim(); if (!lenhBai) return alert("Hảo hán chưa nhập lệnh bài!"); socket.emit('nhap_soi', lenhBai); };
-
-socket.on('soi_created', (lenhBai) => { currentLenhBai = lenhBai; myPvPPlayerNum = 1; document.getElementById('pvp-menu-state').classList.add('hidden'); document.getElementById('pvp-waiting-state').classList.remove('hidden'); document.getElementById('lenh-bai-display').innerText = lenhBai; });
-socket.on('soi_error', (msg) => { alert(msg); });
-
-socket.on('soi_ready', (data) => {
-    window.closePvPMenu(); document.getElementById('start-screen').classList.add('hidden');
-    isPvPMode = true; isFreePlay = false; isExamMode = false; isGiangHoMode = false; isStoryMode = false; currentLenhBai = data.lenhBai; 
-    document.getElementById('leave-btn').innerHTML = '&#10094; Rời sới';
-    const boardElement = document.getElementById('board');
-    if (myPvPPlayerNum === 1) { opponentName = data.p2_name; boardElement.classList.remove('board-flipped'); } 
-    else { myPvPPlayerNum = 2; opponentName = data.p1_name; boardElement.classList.add('board-flipped'); }
-    setTimeout(() => {
-        document.getElementById('game-screen').classList.remove('hidden'); gameScreen.className = 'screen free-play-mode'; weatherEffect.style.display = "none"; document.getElementById('skill-bar-container').classList.add('hidden');
-        gameState = [ [2, 2, 2, 2, 2], [2, 0, 0, 0, 2], [2, 0, 0, 0, 1], [1, 0, 0, 0, 1], [1, 1, 1, 1, 1] ];
-        currentPlayer = 1; moveCount = 0; isPaused = false; selectedPiece = null; showHint = false; lastMoveData = null; historyStates = []; activeSkill = 0;
-        chapterTitle.innerText = `Sới cờ: ${currentLenhBai}`; instTitle.innerText = "Trọng tài:";
-        instText.innerText = myPvPPlayerNum === 1 ? `Ngươi cầm Hỏa kỳ. Kẻ địch là [${opponentName}]. Ngươi đi trước!` : `Ngươi cầm Bạch kỳ. Kẻ địch là [${opponentName}]. Chờ Hỏa kỳ đi trước!`;
-        if (prevBtn) prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); instructionBox.classList.remove('collapsed'); stopTimer(); drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount();
-    }, 600);
-});
-socket.on('nhan_nuoc_di', (data) => { executeMove(data.r1, data.c1, data.r2, data.c2, true); });
-socket.on('doi_thu_dao_tau', () => { if (isPvPMode) { isPaused = true; showFeedback(`Tên [${opponentName}] đã bỏ chạy! Ngươi thắng trận!`, true); nextBtn.innerText = "Rời sới"; } });
-
-// ==========================================
-// CỐT TRUYỆN VÀ 27 ẢI GIANG HỒ
-// ==========================================
-window.openMissionsFromVictory = function() { document.getElementById('victory-screen').classList.add('hidden'); window.openMissions(); };
-window.openMissions = function() {
-    document.getElementById('missions-screen').classList.remove('hidden');
-    const grid = document.getElementById('missions-grid'); grid.innerHTML = '';
-    for(let i = 0; i < 27; i++) {
-        let btn = document.createElement('button');
-        if (i <= myMissionProgress) {
-            btn.className = 'mission-btn'; btn.innerText = `${i+1}`;
-            btn.onclick = () => { window.closeMissions(); window.loadMission(i); };
-        } else { btn.className = 'mission-btn locked-mission'; btn.innerText = `🔒`; }
-        grid.appendChild(btn);
-    }
-};
-window.closeMissions = function() { 
-    document.getElementById('missions-screen').classList.add('hidden'); 
-    document.getElementById('start-screen').classList.remove('hidden');
-};
-
 const chapters = [
     [
         { title: "Bài 1: Nhận diện sa bàn", master: "Thầy đồ:", text: "Bàn cờ có 25 giao điểm. Mỗi bên nắm 8 quân cờ.", board: [ [2, 2, 2, 2, 2], [2, 0, 0, 0, 2], [2, 0, 0, 0, 1], [1, 0, 0, 0, 1], [1, 1, 1, 1, 1] ], interaction: false },
@@ -345,7 +178,7 @@ function getCurrentLessonData() {
 }
 
 // ==========================================
-// CÁC HÀM UI & KỸ NĂNG (SKILLS)
+// CÁC HÀM XỬ LÝ GIAO DIỆN & KỸ NĂNG
 // ==========================================
 function highlightForExplanation(coordsArr, type = 'explain-highlight') { coordsArr.forEach(c => { let visual_r = (isPvPMode && myPvPPlayerNum === 2) ? 4 - c.r : c.r; let visual_c = (isPvPMode && myPvPPlayerNum === 2) ? 4 - c.c : c.c; let pEl = document.querySelector(`.piece[data-vr="${visual_r}"][data-vc="${visual_c}"]`); if(pEl) pEl.classList.add(type); }); }
 function clearExplanationHighlights() { document.querySelectorAll('.explain-highlight, .explain-trap').forEach(el => el.classList.remove('explain-highlight', 'explain-trap')); }
@@ -397,7 +230,7 @@ window.useSkill = function(skillId) {
 };
 
 // ==========================================
-// ĐIỀU HƯỚNG & QUẢN LÝ THỜI GIAN
+// QUẢN LÝ THỜI GIAN & ĐIỀU HƯỚNG CHUNG
 // ==========================================
 function startTimer(seconds) {
     clearInterval(timerInterval); maxTime = seconds; timeLeft = seconds; timerContainer.classList.remove('hidden');
@@ -484,17 +317,20 @@ window.goHome = function() {
 // ==========================================
 window.startGame = function() {
     if (!currentUser) { document.getElementById('auth-msg').innerText = "Cần xưng danh để lưu lại quá trình khoa cử!"; document.getElementById('auth-msg').style.color = "#8b3a3a"; window.openAuth(); return; }
-    if (currentChapterIndex >= chapters.length) { window.openMissions(); return; } 
     
     document.getElementById('start-screen').classList.add('hidden');
     if(bgMusic) { bgMusic.play().then(() => { isMusicPlaying = true; muteBtn.innerHTML = "&#127925; Tắt nhạc"; muteBtn.classList.remove('muted'); }).catch(() => {}); }
-    setTimeout(() => { document.getElementById('game-screen').classList.remove('hidden'); drawLines(); renderNodes(); window.loadLesson(currentChapterIndex, currentLessonIndex); }, 600);
+    
+    setTimeout(() => { 
+        document.getElementById('game-screen').classList.remove('hidden'); 
+        drawLines(); renderNodes(); window.loadLesson(currentChapterIndex, currentLessonIndex); 
+    }, 600);
 };
 
 window.startFreePlay = function(level) {
     isFreePlay = true; isPvPMode = false; isGiangHoMode = false; isStoryMode = false; freePlayLevel = level; myPvPPlayerNum = 0;
     isExamMode = true; isPaused = false; moveCount = 0; currentPlayer = 1; selectedPiece = null; showHint = false; lastMoveData = null; activeSkill = 0; historyStates = [];
-    document.getElementById('board').classList.remove('board-flipped'); document.getElementById('leave-btn').innerHTML = '&#10094; Rời sới';
+    
     document.getElementById('ai-menu').classList.add('hidden-sub'); document.getElementById('start-screen').classList.add('hidden');
     if(bgMusic && bgMusic.paused) { bgMusic.play().then(() => { isMusicPlaying = true; muteBtn.innerHTML = "&#127925; Tắt nhạc"; muteBtn.classList.remove('muted'); }).catch(() => {}); }
     
@@ -505,33 +341,26 @@ window.startFreePlay = function(level) {
         gameState = [ [2, 2, 2, 2, 2], [2, 0, 0, 0, 2], [2, 0, 0, 0, 1], [1, 0, 0, 0, 1], [1, 1, 1, 1, 1] ];
         let levelName = level === 'easy' ? "Nhập môn" : (level === 'medium' ? "Tinh anh" : "Cao thủ");
         chapterTitle.innerText = "Tỉ thí mộc nhân: " + levelName; instTitle.innerText = "Trọng tài:"; instText.innerText = "Sới cờ tự do bắt đầu!"; feedbackText.innerText = "";
+        
         if (prevBtn) prevBtn.classList.add('hidden'); nextBtn.classList.add('hidden'); instructionBox.classList.remove('collapsed'); stopTimer(); 
         drawLines(); renderNodes(); renderPieces(); updateStatusText(); updatePieceCount(); triggerAutoHideText(); updateSkillUI();
     }, 600);
 };
 
 window.loadLesson = function(chapterIdx, lessonIdx) {
-    // TỰ ĐỘNG CHỮA BỆNH KẸT DỮ LIỆU (AUTO-HEAL)
-    // Nếu số bài học vượt quá số bài thực tế của chương, tự động nhảy sang chương tiếp theo
+    // Nếu bị kẹt ở bài học ảo sau khi qua chương, đẩy qua chương mới
     if (chapterIdx < chapters.length && lessonIdx >= chapters[chapterIdx].length) {
-        currentChapterIndex++;
-        currentLessonIndex = 0;
-        chapterIdx = currentChapterIndex;
-        lessonIdx = currentLessonIndex;
+        currentChapterIndex++; currentLessonIndex = 0;
+        chapterIdx = currentChapterIndex; lessonIdx = currentLessonIndex;
         window.saveProgress(currentChapterIndex, currentLessonIndex);
     }
 
-    // Nếu đã hoàn thành toàn bộ cốt truyện, mở thẳng 27 ải
     if (chapterIdx >= chapters.length) { 
-        window.goHome(); 
-        setTimeout(() => { window.openMissions(); }, 600);
-        return; 
+        window.goHome(); setTimeout(() => { window.openMissions(); }, 600); return; 
     }
 
     isFreePlay = false; isPvPMode = false; isGiangHoMode = false; isStoryMode = false; lastMoveData = null; myPvPPlayerNum = 0; activeSkill = 0; historyStates = [];
-    document.getElementById('board').classList.remove('board-flipped'); document.getElementById('leave-btn').innerHTML = '&#10094; Rời sới';
     clearTimeout(aiTimeout); clearTimeout(hideTextTimeout); stopTimer();
-    
     const lesson = chapters[chapterIdx][lessonIdx];
     
     let chapTitle = "";
@@ -563,11 +392,14 @@ window.loadLesson = function(chapterIdx, lessonIdx) {
 window.loadMission = function(missionIdx) {
     isFreePlay = false; isPvPMode = false; isGiangHoMode = true; currentMissionIndex = missionIdx;
     lastMoveData = null; myPvPPlayerNum = 0; activeSkill = 0; historyStates = [];
-    document.getElementById('board').classList.remove('board-flipped'); document.getElementById('leave-btn').innerHTML = '&#10094; Rời ải';
+    document.getElementById('leave-btn').innerHTML = '&#10094; Rời ải';
     clearTimeout(aiTimeout); clearTimeout(hideTextTimeout); stopTimer();
     const mission = giangHoMissions[missionIdx];
     
-    document.getElementById('start-screen').classList.add('hidden'); document.getElementById('game-screen').classList.remove('hidden');
+    document.getElementById('missions-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.add('hidden'); 
+    document.getElementById('game-screen').classList.remove('hidden');
+    
     chapterTitle.innerText = mission.title; instTitle.innerText = "Mật thư:"; instText.innerText = mission.story; feedbackText.innerText = ""; clearExplanationHighlights();
     
     gameState = mission.board.map(row => [...row]);
@@ -591,7 +423,7 @@ window.loadMission = function(missionIdx) {
 
 function triggerAutoHideText() { clearTimeout(hideTextTimeout); hideTextTimeout = setTimeout(() => { if (!isPaused && !isStoryMode && nextBtn.classList.contains('hidden')) { instructionBox.classList.add('collapsed'); } }, 4000); }
 window.prevLesson = function() { clearTimeout(hideTextTimeout); clearTimeout(aiTimeout); clearExplanationHighlights(); stopTimer(); isPaused = false; if (currentLessonIndex > 0) { currentLessonIndex--; } else if (currentChapterIndex > 0) { currentChapterIndex--; currentLessonIndex = chapters[currentChapterIndex].length - 1; } window.saveProgress(currentChapterIndex, currentLessonIndex); window.loadLesson(currentChapterIndex, currentLessonIndex); };
-function showVictoryScreen() { document.getElementById('game-screen').classList.add('hidden'); document.getElementById('victory-screen').classList.remove('hidden'); document.getElementById('winner-name').innerText = currentUser; }
+window.showVictoryScreen = function() { document.getElementById('game-screen').classList.add('hidden'); document.getElementById('victory-screen').classList.remove('hidden'); document.getElementById('winner-name').innerText = currentUser; };
 
 window.nextLesson = function() {
     if (nextBtn.innerText === "Thử lại") { window.restartLesson(); return; }
@@ -630,7 +462,7 @@ window.nextLesson = function() {
             nextBtn.onclick = function() { currentChapterIndex = 3; currentLessonIndex = 0; window.saveProgress(3, 0); nextBtn.onclick = window.nextLesson; window.loadLesson(3, 0); };
         } else if (currentChapterIndex === 3) {
             window.unlockSkill("Độn thổ"); window.unlockReward("Mũ cánh chuồn"); window.unlockReward("Áo bào đỏ"); 
-            currentChapterIndex = 4; window.saveProgress(4, 0); showVictoryScreen();
+            currentChapterIndex = 4; currentLessonIndex = 0; window.saveProgress(4, 0); window.showVictoryScreen();
         }
     }
 };
@@ -658,7 +490,7 @@ function updatePieceCount() {
 // ==========================================
 function getVisualCoords(r, c) { if (isPvPMode && myPvPPlayerNum === 2) { return { vr: 4 - r, vc: 4 - c }; } return { vr: r, vc: c }; }
 
-function drawLines() {
+window.drawLines = function() {
     const svg = document.getElementById('lines-svg');
     if (!svg) return;
     while (svg.firstChild) { svg.removeChild(svg.firstChild); }
@@ -673,7 +505,7 @@ function drawLines() {
     }
     createLine("0%", "0%", "100%", "100%"); createLine("0%", "100%", "100%", "0%"); createLine("50%", "0%", "100%", "50%");
     createLine("100%", "50%", "50%", "100%"); createLine("50%", "100%", "0%", "50%"); createLine("0%", "50%", "50%", "0%");
-}
+};
 
 function renderNodes() {
     document.querySelectorAll('.node').forEach(n => n.remove()); 
